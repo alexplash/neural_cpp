@@ -148,6 +148,69 @@ public:
         
     }
 
+    std::shared_ptr<Tensor> operator*(std::shared_ptr<Tensor> other) {
+        if (_shape.size() == 0 && other->shape().size() == 0) {
+            throw std::invalid_argument("Both arguments must be atleast 1d for matmul.");
+        }
+
+        if (_shape[_shape.size() - 1] != other->shape()[0]) {
+            throw std::invalid_argument(
+                "Last dimension of first tensor doesn't equal first dimension of second tensor."
+            );
+        }
+
+        // 1d * 1d = float
+        if (_shape.size() == 1 && other->shape().size() == 1) {
+            float result = 0;
+            for (std::size_t i = 0; i < _shape[0]; i++) {
+                result += (operator()(i) * (*other)(i));
+            }
+            return std::make_shared<Tensor>(result);
+        }
+
+        // 2d * 1d = 1d
+        if (_shape.size() == 2 && other->shape().size() == 1) {
+            std::vector<float> result;
+            for (std::size_t i = 0; i < _shape[0]; i++) {
+                float result_i = 0;
+                for (std::size_t j = 0; j < _shape[1]; j++) {
+                    result_i += (operator()(i, j) * (*other)(j));
+                }
+                result.push_back(result_i);
+            }
+            return std::make_shared<Tensor>(result);
+        }
+
+        // 1d * 2d = 1d
+        if (_shape.size() == 1 && other->shape().size() == 2) {
+            std::vector<float> result;
+            for (std::size_t j = 0; j < other->shape()[1]; j++) {
+                float result_j = 0;
+                for (std::size_t i = 0; i < other->shape()[0]; i++) {
+                    result_j += (operator()(i) * (*other)(i, j));
+                }
+                result.push_back(result_j);
+            }
+            return std::make_shared<Tensor>(result);
+        }
+
+        // 2d * 2d = 2d
+        std::vector<std::vector<float>> result;
+        for (std::size_t i = 0; i < _shape[0]; i++) {
+            std::vector<float> row;
+            for (std::size_t j = 0; j < other->shape()[1]; j++) {
+                float result_ij = 0;
+                for (std::size_t k = 0; k < _shape[1]; k++) {
+                    result_ij += (operator()(i, k) * (*other)(k, j));
+                }
+                row.push_back(result_ij);
+            }
+            result.push_back(row);
+        }
+        return std::make_shared<Tensor>(result); 
+
+    }
+
     const std::vector<std::size_t> &shape() {
         return _shape;
     }
