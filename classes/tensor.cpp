@@ -36,14 +36,14 @@ public:
         }
     }
 
-    const float &item() const {
+    float &item() {
         if (_data.size() != 1) {
             throw std::runtime_error("item() requires exactly one element.");
         }
         return _data[0];
     }
 
-    const float &operator()(std::size_t i) const {
+    float &operator()(std::size_t i) {
         if (_shape.size() != 1) {
             throw std::invalid_argument("Single indexing only works for 1D tensors.");
         }
@@ -53,7 +53,7 @@ public:
         return _data[i];
     }
 
-    const float &operator()(std::size_t i, std::size_t j) const {
+    float &operator()(std::size_t i, std::size_t j) {
         if (_shape.size() != 2) {
             throw std::invalid_argument("Double indexing only works for 2D tensors.");
         }
@@ -148,15 +148,15 @@ public:
         
     }
 
-    const std::vector<std::size_t> &shape() const {
+    const std::vector<std::size_t> &shape() {
         return _shape;
     }
 
-    const std::vector<std::size_t> &stride() const {
+    const std::vector<std::size_t> &stride() {
         return _stride;
     }
 
-    friend std::ostream &operator<<(std::ostream &os, const Tensor &obj) {
+    friend std::ostream &operator<<(std::ostream &os, Tensor &obj) {
         if (obj._shape.empty()) {
             os << obj._data[0];
             return os;
