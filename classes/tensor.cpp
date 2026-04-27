@@ -1,20 +1,70 @@
 #include <cstddef>
+#include <functional>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
+#include <memory>
 
-class Tensor {
+class Tensor : std::enable_shared_from_this<Tensor> {
 private:
     std::vector<float> _data;
     std::vector<std::size_t> _shape;
     std::vector<std::size_t> _stride;
+    std::vector<float> _grad;
+    std::function<void(const std::vector<float>&)> _gradfn;
+    std::vector<std::shared_ptr<Tensor>> _parents;
+    bool _requires_grad;
 
 public:
-    Tensor(float data) : _data{data}, _shape{}, _stride{} {}
+    Tensor(
+        float data, 
+        bool requires_grad = false, 
+        std::function<void(const std::vector<float>&)> grad_fn = nullptr,
+        std::vector<std::shared_ptr<Tensor>> parents = {}
+    ) : _data{data},
+        _shape{},
+        _stride{},
+        _grad{},
+        _gradfn{grad_fn},
+        _parents{parents},
+        _requires_grad{requires_grad}
+    {
+        if (_requires_grad) {
+            zero_grad();
+        }
+    }
 
-    Tensor(std::vector<float> data) : _data(data), _shape{data.size()}, _stride{1} {}
+    Tensor(
+        std::vector<float> data,
+        bool requires_grad = false, 
+        std::function<void(const std::vector<float>&)> grad_fn = nullptr,
+        std::vector<std::shared_ptr<Tensor>> parents = {}
+    ) : _data(data),
+        _shape{data.size()},
+        _stride{1},
+        _grad{},
+        _gradfn{grad_fn},
+        _parents{parents},
+        _requires_grad{requires_grad}
+    {
+        if (_requires_grad) {
+            zero_grad();
+        }
+    }
 
-    Tensor(std::vector<std::vector<float>> data) {
+    Tensor(
+        std::vector<std::vector<float>> data,
+        bool requires_grad = false, 
+        std::function<void(const std::vector<float>&)> grad_fn = nullptr,
+        std::vector<std::shared_ptr<Tensor>> parents = {}
+    ) : _data{},
+        _shape{},
+        _stride{},
+        _grad{},
+        _gradfn{grad_fn},
+        _parents{parents},
+        _requires_grad{requires_grad}
+    {
         if (data.empty() || data[0].empty()) {
             throw std::invalid_argument("Tensor data cannot be empty.");
         }
@@ -33,6 +83,10 @@ public:
             for (std::size_t j = 0; j < cols; j++) {
                 _data.push_back(data[i][j]);
             }
+        }
+
+        if (_requires_grad) {
+            zero_grad();
         }
     }
 
@@ -217,6 +271,35 @@ public:
 
     const std::vector<std::size_t> &stride() {
         return _stride;
+    }
+
+    const bool &requires_grad() {
+        return _requires_grad;
+    }
+
+    const std::vector<float> &grad() {
+        return _grad;
+    }
+
+    void add_to_grad(const std::vector<float>& grad_update) {
+        if (!_requires_grad) {
+            return;
+        }
+        if (_grad.size() != grad_update.size()) {
+            throw std::runtime_error("Gradient shape mismatch during accumulation");
+        }
+
+        for (std::size_t i = 0; i < _grad.size(); i++) {
+            _grad[i] += grad_update[i];
+        }
+    }
+
+    void zero_grad() {
+        _grad = std::vector<float>(_data.size(), 0);
+    }
+
+    std::size_t numel() {
+        return _data.size();
     }
 
     friend std::ostream &operator<<(std::ostream &os, Tensor &obj) {
