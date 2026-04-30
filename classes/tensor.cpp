@@ -5,7 +5,7 @@
 #include <vector>
 #include <memory>
 
-class Tensor : std::enable_shared_from_this<Tensor> {
+class Tensor : public std::enable_shared_from_this<Tensor> {
 private:
     std::vector<float> _data;
     std::vector<std::size_t> _shape;
@@ -14,6 +14,36 @@ private:
     std::function<void(const std::vector<float>&)> _gradfn;
     std::vector<std::shared_ptr<Tensor>> _parents;
     bool _requires_grad;
+    bool _visited = false;
+
+    void _backward() {
+        if (!_requires_grad) {
+            return;
+        }
+        if (_visited) {
+            return;
+        }
+        _visited = true;
+
+        if (_gradfn) {
+            _gradfn(_grad);
+        }
+        for (std::size_t i = 0; i < _parents.size(); i++) {
+            _parents[i]->_backward();
+        }
+
+    }
+
+    void _reset_graph_visit() {
+        if (!_visited) {
+            return;
+        }
+
+        _visited = false;
+        for (std::size_t i = 0; i < _parents.size(); i++) {
+            _parents[i]->_reset_graph_visit();
+        }
+    }
 
 public:
     Tensor(
@@ -517,6 +547,19 @@ public:
 
     std::size_t numel() {
         return _data.size();
+    }
+
+    void backward() {
+        if (!_requires_grad) {
+            throw std::runtime_error("Element does not require a grad.");
+        }
+        if (_shape.size() != 0) {
+            throw std::runtime_error("Grad can only be calculated for scalar outputs");
+        }
+        _reset_graph_visit();
+
+        _grad = {1.0};
+        _backward();
     }
 
     friend std::ostream &operator<<(std::ostream &os, Tensor &obj) {
