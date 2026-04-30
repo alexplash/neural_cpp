@@ -5,7 +5,7 @@
 #include <vector>
 #include <memory>
 
-class Tensor : public std::enable_shared_from_this<Tensor> {
+class Tensor : std::enable_shared_from_this<Tensor> {
 private:
     std::vector<float> _data;
     std::vector<std::size_t> _shape;
