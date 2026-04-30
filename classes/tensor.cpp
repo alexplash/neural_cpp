@@ -409,7 +409,7 @@ public:
                         std::vector<float> grad_self;
                         for (std::size_t i = 0; i < self->shape()[0]; i++) {
                             float grad_self_i = 0;
-                            for (std::size_t j = 0; other->shape()[1]; j++) {
+                            for (std::size_t j = 0; j < other->shape()[1]; j++) {
                                 grad_self_i += ((*other)(i, j) * grad_output[j]);
                             }
                             grad_self.push_back(grad_self_i);
