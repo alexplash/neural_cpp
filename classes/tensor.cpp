@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <vector>
 #include <memory>
+#include <cmath>
 
 class Tensor : public std::enable_shared_from_this<Tensor> {
 private:
@@ -546,6 +547,164 @@ public:
                     self->add_to_grad(grad_self);
                 };
             
+            return std::make_shared<Tensor>(result, true, gradfn, parents);
+        }
+
+        return std::make_shared<Tensor>(result);
+    }
+
+    std::shared_ptr<Tensor> log() {
+        // scalar
+        if (_shape.size() == 0) {
+            if (item() <= 0.0f) {
+                throw std::runtime_error("log input must be positive");
+            }
+
+            float result = std::log(item());
+
+            if (_requires_grad) {
+                std::shared_ptr<Tensor> self = shared_from_this();
+                std::vector<std::shared_ptr<Tensor>> parents{self};
+                std::function<void(const std::vector<float>&)> gradfn =
+                    [self](const std::vector<float>& grad_output) {
+                        self->add_to_grad({grad_output[0] * (1.0f / self->item())});
+                    };
+                
+                return std::make_shared<Tensor>(result, true, gradfn, parents);
+            }
+
+            return std::make_shared<Tensor>(result);
+        }
+
+        // 1d
+        if (_shape.size() != 1) {
+            throw std::runtime_error("log only supports scalar and 1D tensors.");
+        }
+
+        std::vector<float> result;
+
+        for (std::size_t i = 0; i < _shape[0]; i++) {
+            float value = operator()(i);
+            if (value <= 0.0f) {
+                throw std::runtime_error("log input must be positive");
+            }
+            result.push_back(std::log(value));
+        }
+
+        if (_requires_grad) {
+            std::shared_ptr<Tensor> self = shared_from_this();
+            std::vector<std::shared_ptr<Tensor>> parents{self};
+            std::function<void(const std::vector<float>&)> gradfn =
+                [self](const std::vector<float>& grad_output) {
+                    std::vector<float> grad_self;
+
+                    for (std::size_t i = 0; i < self->shape()[0]; i++) {
+                        grad_self.push_back(grad_output[i] * (1.0f / (*self)(i)));
+                    }
+
+                    self->add_to_grad(grad_self);
+                };
+
+            return std::make_shared<Tensor>(result, true, gradfn, parents);
+        }
+
+        return std::make_shared<Tensor>(result);
+        
+    }
+
+    std::shared_ptr<Tensor> softmax() {
+        if (_shape.size() != 1) {
+            throw std::runtime_error("softmax requires 1d tensor");
+        }
+
+        float max_value = operator()(0);
+        for (std::size_t i = 0; i < _shape[0]; i++) {
+            if (operator()(i) > max_value) {
+                max_value = operator()(i);
+            }
+        }
+
+        std::vector<float> exp_values;
+        float sum_exp = 0;
+        for (std::size_t i = 0; i < _shape[0]; i++) {
+            float exp_value = std::exp(operator()(i) - max_value);
+            exp_values.push_back(exp_value);
+            sum_exp += exp_value;
+        }
+
+        std::vector<float> result;
+        for (std::size_t i = 0; i < _shape[0]; i++) {
+            result.push_back(exp_values[i] / sum_exp);
+        }
+
+        if (_requires_grad) {
+            std::shared_ptr<Tensor> self = shared_from_this();
+            std::vector<std::shared_ptr<Tensor>> parents{self};
+            std::function<void(const std::vector<float>&)> gradfn =
+                [self, result](const std::vector<float>& grad_output) {
+                    std::vector<float> grad_self;
+
+                    float dot = 0;
+                    for (std::size_t j = 0; j < result.size(); j++) {
+                        dot += grad_output[j] * result[j];
+                    }
+
+                    for (std::size_t i = 0; i < result.size(); i++) {
+                        grad_self.push_back(result[i] * (grad_output[i] - dot));
+                    }
+
+                    self->add_to_grad(grad_self);
+                };
+            
+            return std::make_shared<Tensor>(result, true, gradfn, parents);
+        }
+
+        return std::make_shared<Tensor>(result);
+    }
+
+    std::shared_ptr<Tensor> neg() {
+        // scalar
+        if (_shape.size() == 0) {
+            float result = -1 * item();
+
+            if (_requires_grad) {
+                std::shared_ptr<Tensor> self = shared_from_this();
+                std::vector<std::shared_ptr<Tensor>> parents{self};
+                std::function<void(const std::vector<float>&)> gradfn =
+                    [self](const std::vector<float>& grad_output) {
+                        self->add_to_grad({-1 * grad_output[0]});
+                    };
+                
+                return std::make_shared<Tensor>(result, true, gradfn, parents);
+            }
+
+            return std::make_shared<Tensor>(result);
+        }
+
+        // 1d
+        if (_shape.size() != 1) {
+            throw std::runtime_error("negative transformation only supports scalar and 1d.");
+        }
+
+        std::vector<float> result;
+        for (std::size_t i = 0; i < _shape[0]; i++) {
+            result.push_back(-1 * operator()(i));
+        }
+
+        if (_requires_grad) {
+            std::shared_ptr<Tensor> self = shared_from_this();
+            std::vector<std::shared_ptr<Tensor>> parents{self};
+            std::function<void(const std::vector<float>&)> gradfn =
+                [self](const std::vector<float>& grad_output) {
+                    std::vector<float> grad_self;
+
+                    for (std::size_t i = 0; i < self->shape()[0]; i++) {
+                        grad_self.push_back(-1 * grad_output[i]);
+                    }
+
+                    self->add_to_grad(grad_self);
+                };
+
             return std::make_shared<Tensor>(result, true, gradfn, parents);
         }
 
