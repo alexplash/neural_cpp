@@ -158,7 +158,6 @@ public:
                 std::vector<std::shared_ptr<Tensor>> parents{self, other};
                 std::function<void(const std::vector<float>&)> gradfn = 
                     [self, other](const std::vector<float>& grad_output) {
-                        // propagate parent gradient
                         self->add_to_grad({grad_output[0]});
                         other->add_to_grad({grad_output[0]});
                     };
@@ -180,7 +179,6 @@ public:
                 std::vector<std::shared_ptr<Tensor>> parents{self, other};
                 std::function<void(const std::vector<float>&)> gradfn = 
                     [self, other](const std::vector<float>& grad_output) {
-                        // broadcast in forward = sum in backward
                         float grad_self = 0;
                         for (std::size_t i = 0; i < grad_output.size(); i++) {
                             grad_self += grad_output[i];
@@ -210,7 +208,6 @@ public:
                 std::vector<std::shared_ptr<Tensor>> parents{self, other};
                 std::function<void(const std::vector<float>&)> gradfn = 
                     [self, other](const std::vector<float>& grad_output) {
-                        // broadcast forward = sum in backward
                         float grad_self = 0;
                         for (std::size_t i = 0; i < grad_output.size(); i++) {
                             grad_self += grad_output[i];
@@ -236,7 +233,6 @@ public:
                 std::vector<std::shared_ptr<Tensor>> parents{self, other};
                 std::function<void(const std::vector<float>&)> gradfn = 
                     [self, other](const std::vector<float>& grad_output) {
-                        // broadcast in forward = sum in backward
                         float grad_other = 0;
                         for (std::size_t i = 0; i < grad_output.size(); i++) {
                             grad_other += grad_output[i];
@@ -299,7 +295,6 @@ public:
                 std::vector<std::shared_ptr<Tensor>> parents{self, other};
                 std::function<void(const std::vector<float>&)> gradfn =
                     [self, other](const std::vector<float>& grad_output) {
-                        // propagate child gradients
                         self->add_to_grad(grad_output);
                         other->add_to_grad(grad_output);
                     };
@@ -328,7 +323,6 @@ public:
                 std::vector<std::shared_ptr<Tensor>> parents{self, other};
                 std::function<void(const std::vector<float>&)> gradfn =
                     [self, other](const std::vector<float>& grad_output) {
-                        // propagate child gradients
                         self->add_to_grad(grad_output);
                         other->add_to_grad(grad_output);
                     };
@@ -363,7 +357,6 @@ public:
                 std::vector<std::shared_ptr<Tensor>> parents{self, other};
                 std::function<void(const std::vector<float>&)> gradfn =
                     [self, other](const std::vector<float>& grad_output) {
-                        // output gradients is a scalar, and it gets propagated back to its parents
                         std::vector<float> grad_self;
                         std::vector<float> grad_other;
                         for (std::size_t i = 0; i < self->numel(); i++) {
@@ -396,7 +389,7 @@ public:
                 std::function<void(const std::vector<float>&)> gradfn =
                     [self, other](const std::vector<float>& grad_output) {
                         std::vector<float> grad_self;
-                        // iterate over row-major order
+                        
                         for (std::size_t i = 0; i < self->shape()[0]; i++) {
                             for (std::size_t j = 0; j < self->shape()[1]; j++) {
                                 grad_self.push_back((*other)(j) * grad_output[i]);
@@ -773,5 +766,5 @@ public:
             _data[i] -= learning_rate * (_grad[i] / batch_size);
         }
     }
-    
+
 };
