@@ -1,3 +1,4 @@
 main
 .vscode/
 build/
+data/mnist/

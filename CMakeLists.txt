@@ -2,4 +2,4 @@ cmake_minimum_required(VERSION 3.10.0)
 project(neural_cpp VERSION 0.1.0 LANGUAGES C CXX)
 
 add_executable(neural_cpp main.cpp)
-
+target_compile_definitions(neural_cpp PRIVATE NEURAL_CPP_SOURCE_DIR="${CMAKE_SOURCE_DIR}")

@@ -461,55 +461,6 @@ public:
             return std::make_shared<Tensor>(result);
         }
 
-        // // 2d * 2d = 2d
-        // std::vector<std::vector<float>> result;
-        // for (std::size_t i = 0; i < _shape[0]; i++) {
-        //     std::vector<float> row;
-        //     for (std::size_t j = 0; j < other->shape()[1]; j++) {
-        //         float result_ij = 0;
-        //         for (std::size_t k = 0; k < _shape[1]; k++) {
-        //             result_ij += (operator()(i, k) * (*other)(k, j));
-        //         }
-        //         row.push_back(result_ij);
-        //     }
-        //     result.push_back(row);
-        // }
-
-        // if (_requires_grad || other->requires_grad()) {
-        //     std::shared_ptr<Tensor> self = shared_from_this();
-        //     std::vector<std::shared_ptr<Tensor>> parents{self, other};
-        //     std::function<void(const std::vector<float> &)> gradfn =
-        //         [self, other](const std::vector<float> &grad_output) {
-        //             std::vector<float> grad_self;
-        //             for (std::size_t i = 0; i < self->shape()[0]; i++) {
-        //                 for (std::size_t j = 0; j < self->shape()[1]; j++) {
-        //                     float grad_self_i_j = 0;
-        //                     for (std::size_t k = 0; k < other->shape()[1]; k++) {
-        //                         grad_self_i_j += ((*other)(j, k) * grad_output[i * other->shape()[1] + k]);
-        //                     }
-        //                     grad_self.push_back(grad_self_i_j);
-        //                 }
-        //             }
-
-        //             std::vector<float> grad_other;
-        //             for (std::size_t i = 0; i < other->shape()[0]; i++) {
-        //                 for (std::size_t j = 0; j < other->shape()[1]; j++) {
-        //                     float grad_other_i_j = 0;
-        //                     for (std::size_t k = 0; k < self->shape()[0]; k++) {
-        //                         grad_other_i_j += ((*self)(k, i) * grad_output[k * other->shape()[1] + j]);
-        //                     }
-        //                     grad_other.push_back(grad_other_i_j);
-        //                 }
-        //             }
-
-        //             self->add_to_grad(grad_self);
-        //             other->add_to_grad(grad_other);
-        //         };
-        //     return std::make_shared<Tensor>(result, true, gradfn, parents);
-        // }
-
-        // return std::make_shared<Tensor>(result); 
-
         return std::make_shared<Tensor>(0);
 
     }
@@ -564,7 +515,6 @@ public:
 
             return std::make_shared<Tensor>(result);
         }
-
 
         // 2d
         std::vector<std::vector<float>> result;
@@ -650,6 +600,19 @@ public:
 
         _grad = {1.0};
         _backward();
+    }
+
+    void sgd_step(float& learning_rate, float& batch_size) {
+        if (!_requires_grad) {
+            return;
+        }
+        if (_data.size() != _grad.size()) {
+            throw std::runtime_error("Data/gradient size mismatch during SGD step.");
+        }
+
+        for (std::size_t i = 0; i < _data.size(); i++) {
+            _data[i] -= learning_rate * (_grad[i] / batch_size);
+        }
     }
 
     friend std::ostream &operator<<(std::ostream &os, Tensor &obj) {
