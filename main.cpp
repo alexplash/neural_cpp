@@ -13,6 +13,8 @@
 
 int main() {
 
+    // load in MNIST data
+    // ----------------------------------------------------------------------------------------------
     std::string data_dir =
         (std::filesystem::path(NEURAL_CPP_SOURCE_DIR) / "data" / "mnist").string();
 
@@ -27,19 +29,25 @@ int main() {
         data_dir + "/t10k-images-idx3-ubyte",
         data_dir + "/t10k-labels-idx1-ubyte"
     );
+    // ----------------------------------------------------------------------------------------------
 
+    // define hyper parameters
+    // ----------------------------------------------------------------------------------------------
     float min_float = -0.05f;
     float max_float = 0.05f;
     float learning_rate = 0.0001;
     float batch_size = 32;
-    std::size_t epochs = 20;
+    std::size_t epochs = 10;
+    // ----------------------------------------------------------------------------------------------
 
+    // define neural network & params
+    // ----------------------------------------------------------------------------------------------
     std::shared_ptr<Tensor> weights_1 = std::make_shared<Tensor>(
         random_matrix(784, 512, min_float, max_float),
         true
     );
     std::shared_ptr<Tensor> bias_1 = std::make_shared<Tensor>(
-        random_vector(512, min_float, max_float),
+        random_vector(512, 0.0f, 0.0f),
         true
     );
     std::shared_ptr<Tensor> weights_2 = std::make_shared<Tensor>(
@@ -47,7 +55,7 @@ int main() {
         true
     );
     std::shared_ptr<Tensor> bias_2 = std::make_shared<Tensor>(
-        random_vector(512, min_float, max_float),
+        random_vector(512, 0.0f, 0.0f),
         true
     );
     std::shared_ptr<Tensor> weights_3 = std::make_shared<Tensor>(
@@ -55,7 +63,7 @@ int main() {
         true
     );
     std::shared_ptr<Tensor> bias_3 = std::make_shared<Tensor>(
-        random_vector(10, min_float, max_float),
+        random_vector(10, 0.0f, 0.0f),
         true
     );
 
@@ -67,7 +75,11 @@ int main() {
         weights_3,
         bias_3
     };
+    // ----------------------------------------------------------------------------------------------
 
+    
+    // training loop
+    // ----------------------------------------------------------------------------------------------
     std::cout << "Starting training..." << std::endl;
 
     for (std::size_t epoch = 0; epoch < epochs; epoch++) {
@@ -84,6 +96,7 @@ int main() {
                 false
             );
 
+            // forward pass
             std::shared_ptr<Tensor> h1 = *input_x * weights_1;
             std::shared_ptr<Tensor> h1_b = *h1 + bias_1;
             std::shared_ptr<Tensor> h1_relu = h1_b->relu();
@@ -93,6 +106,7 @@ int main() {
             std::shared_ptr<Tensor> h3 = *h2_relu * weights_3;
             std::shared_ptr<Tensor> logits = *h3 + bias_3;
 
+            // cross entrupy loss
             std::vector<float> target_vector(10, 0.0f);
             target_vector[train_data[train_index].label] = 1.0f;
             std::shared_ptr<Tensor> target = std::make_shared<Tensor>(target_vector, false);
@@ -103,6 +117,7 @@ int main() {
 
             epoch_loss += loss->item();
 
+            // backpropagation & optimization
             loss->backward();
 
             if (curr_batch_count >= batch_size) {
@@ -145,6 +160,49 @@ int main() {
     }
 
     std::cout << "Training complete." << std::endl;
+    // ----------------------------------------------------------------------------------------------
+
+
+    // validation loop
+    // ----------------------------------------------------------------------------------------------
+    std::cout << "Starting validation..." << std::endl;
+
+    float total_images = static_cast<float>(test_data.size());
+    float total_correct = 0.0f;
+    for (std::size_t test_index = 0; test_index < test_data.size(); test_index++) {
+        std::shared_ptr<Tensor> input_x = std::make_shared<Tensor>(
+            test_data[test_index].image,
+            false
+        );
+
+        int target_index = test_data[test_index].label;
+
+        // forward pass
+        std::shared_ptr<Tensor> h1 = *input_x * weights_1;
+        std::shared_ptr<Tensor> h1_b = *h1 + bias_1;
+        std::shared_ptr<Tensor> h1_relu = h1_b->relu();
+        std::shared_ptr<Tensor> h2 = *h1_relu * weights_2;
+        std::shared_ptr<Tensor> h2_b = *h2 + bias_2;
+        std::shared_ptr<Tensor> h2_relu = h2_b->relu();
+        std::shared_ptr<Tensor> h3 = *h2_relu * weights_3;
+        std::shared_ptr<Tensor> logits = *h3 + bias_3;
+
+        std::size_t argmax = 0;
+        for (std::size_t i = 0; i < logits->shape()[0]; i++) {
+            if ((*logits)(i) > (*logits)(argmax)) {
+                argmax = i;
+            }
+        }
+
+        if (argmax == static_cast<std::size_t>(target_index)) {
+            total_correct++;
+        }
+    }
+
+    float accuracy = total_correct / total_images;
+
+    std::cout << "Completed validation / " << "accuracy = " << (accuracy * 100) << "%" << std::endl;
+    // ----------------------------------------------------------------------------------------------
 
 
     return 0;
