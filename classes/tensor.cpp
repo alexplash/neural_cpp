@@ -461,55 +461,145 @@ public:
             return std::make_shared<Tensor>(result);
         }
 
-        // 2d * 2d = 2d
+        // // 2d * 2d = 2d
+        // std::vector<std::vector<float>> result;
+        // for (std::size_t i = 0; i < _shape[0]; i++) {
+        //     std::vector<float> row;
+        //     for (std::size_t j = 0; j < other->shape()[1]; j++) {
+        //         float result_ij = 0;
+        //         for (std::size_t k = 0; k < _shape[1]; k++) {
+        //             result_ij += (operator()(i, k) * (*other)(k, j));
+        //         }
+        //         row.push_back(result_ij);
+        //     }
+        //     result.push_back(row);
+        // }
+
+        // if (_requires_grad || other->requires_grad()) {
+        //     std::shared_ptr<Tensor> self = shared_from_this();
+        //     std::vector<std::shared_ptr<Tensor>> parents{self, other};
+        //     std::function<void(const std::vector<float> &)> gradfn =
+        //         [self, other](const std::vector<float> &grad_output) {
+        //             std::vector<float> grad_self;
+        //             for (std::size_t i = 0; i < self->shape()[0]; i++) {
+        //                 for (std::size_t j = 0; j < self->shape()[1]; j++) {
+        //                     float grad_self_i_j = 0;
+        //                     for (std::size_t k = 0; k < other->shape()[1]; k++) {
+        //                         grad_self_i_j += ((*other)(j, k) * grad_output[i * other->shape()[1] + k]);
+        //                     }
+        //                     grad_self.push_back(grad_self_i_j);
+        //                 }
+        //             }
+
+        //             std::vector<float> grad_other;
+        //             for (std::size_t i = 0; i < other->shape()[0]; i++) {
+        //                 for (std::size_t j = 0; j < other->shape()[1]; j++) {
+        //                     float grad_other_i_j = 0;
+        //                     for (std::size_t k = 0; k < self->shape()[0]; k++) {
+        //                         grad_other_i_j += ((*self)(k, i) * grad_output[k * other->shape()[1] + j]);
+        //                     }
+        //                     grad_other.push_back(grad_other_i_j);
+        //                 }
+        //             }
+
+        //             self->add_to_grad(grad_self);
+        //             other->add_to_grad(grad_other);
+        //         };
+        //     return std::make_shared<Tensor>(result, true, gradfn, parents);
+        // }
+
+        // return std::make_shared<Tensor>(result); 
+
+        return std::make_shared<Tensor>(0);
+
+    }
+
+    std::shared_ptr<Tensor> relu() {
+
+        // scalar
+        if (_shape.size() == 0) {
+            float result = item() > 0 ? item() : 0;
+
+            if (_requires_grad) {
+                std::shared_ptr<Tensor> self = shared_from_this();
+                std::vector<std::shared_ptr<Tensor>> parents{self};
+                std::function<void(const std::vector<float> &)> gradfn =
+                    [self](const std::vector<float> &grad_output) {
+                        float grad_self = self->item() > 0 ? 1.0 : 0.0;
+                        self->add_to_grad({grad_output[0] * grad_self});
+                    };
+                
+                return std::make_shared<Tensor>(result, true, gradfn, parents);
+            }
+
+            return std::make_shared<Tensor>(result);
+        }
+
+        // 1d
+        if (_shape.size() == 1) {
+            std::vector<float> result;
+
+            for (std::size_t i = 0; i < _shape[0]; i++) {
+                float value = operator()(i);
+                result.push_back(value > 0 ? value : 0);
+            }
+
+            if (_requires_grad) {
+                std::shared_ptr<Tensor> self = shared_from_this();
+                std::vector<std::shared_ptr<Tensor>> parents{self};
+                std::function<void(const std::vector<float> &)> gradfn =
+                    [self](const std::vector<float> &grad_output) {
+                        std::vector<float> grad_self;
+
+                        for (std::size_t i = 0; i < self->shape()[0]; i++) {
+                            float curr_grad = (*self)(i) > 0 ? 1 : 0;
+                            grad_self.push_back(grad_output[i] * curr_grad);
+                        }
+
+                        self->add_to_grad(grad_self);
+                    };
+                
+                return std::make_shared<Tensor>(result, true, gradfn, parents);
+            }
+
+            return std::make_shared<Tensor>(result);
+        }
+
+
+        // 2d
         std::vector<std::vector<float>> result;
+
         for (std::size_t i = 0; i < _shape[0]; i++) {
             std::vector<float> row;
-            for (std::size_t j = 0; j < other->shape()[1]; j++) {
-                float result_ij = 0;
-                for (std::size_t k = 0; k < _shape[1]; k++) {
-                    result_ij += (operator()(i, k) * (*other)(k, j));
-                }
-                row.push_back(result_ij);
+            for (std::size_t j = 0; j < _shape[1]; j++) {
+                float value = operator()(i, j);
+                row.push_back(value > 0 ? value : 0);
             }
             result.push_back(row);
         }
 
-        if (_requires_grad || other->requires_grad()) {
+        if (_requires_grad) {
             std::shared_ptr<Tensor> self = shared_from_this();
-            std::vector<std::shared_ptr<Tensor>> parents{self, other};
+            std::vector<std::shared_ptr<Tensor>> parents{self};
             std::function<void(const std::vector<float> &)> gradfn =
-                [self, other](const std::vector<float> &grad_output) {
+                [self](const std::vector<float> &grad_output) {
                     std::vector<float> grad_self;
+
                     for (std::size_t i = 0; i < self->shape()[0]; i++) {
                         for (std::size_t j = 0; j < self->shape()[1]; j++) {
-                            float grad_self_i_j = 0;
-                            for (std::size_t k = 0; k < other->shape()[1]; k++) {
-                                grad_self_i_j += ((*other)(j, k) * grad_output[i * other->shape()[1] + k]);
-                            }
-                            grad_self.push_back(grad_self_i_j);
-                        }
-                    }
-
-                    std::vector<float> grad_other;
-                    for (std::size_t i = 0; i < other->shape()[0]; i++) {
-                        for (std::size_t j = 0; j < other->shape()[1]; j++) {
-                            float grad_other_i_j = 0;
-                            for (std::size_t k = 0; k < self->shape()[0]; k++) {
-                                grad_other_i_j += ((*self)(k, i) * grad_output[k * other->shape()[1] + j]);
-                            }
-                            grad_other.push_back(grad_other_i_j);
+                            float curr_grad = (*self)(i, j) > 0 ? 1 : 0;
+                            std::size_t flat_index = i * self->shape()[1] + j;
+                            grad_self.push_back(grad_output[flat_index] * curr_grad);
                         }
                     }
 
                     self->add_to_grad(grad_self);
-                    other->add_to_grad(grad_other);
                 };
+            
             return std::make_shared<Tensor>(result, true, gradfn, parents);
         }
 
-        return std::make_shared<Tensor>(result); 
-
+        return std::make_shared<Tensor>(result);
     }
 
     const std::vector<std::size_t> &shape() {
