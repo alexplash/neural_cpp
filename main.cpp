@@ -28,8 +28,8 @@ int main() {
         data_dir + "/t10k-labels-idx1-ubyte"
     );
 
-    float min_float = -1;
-    float max_float = 1;
+    float min_float = -0.05f;
+    float max_float = 0.05f;
     float learning_rate = 0.0001;
     float batch_size = 32;
     std::size_t epochs = 20;
@@ -68,8 +68,14 @@ int main() {
         bias_3
     };
 
+    std::cout << "Starting training..." << std::endl;
+
     for (std::size_t epoch = 0; epoch < epochs; epoch++) {
+        std::cout << "Epoch " << (epoch + 1) << "/" << epochs << " started" << std::endl;
+
         float curr_batch_count = 0;
+        float epoch_loss = 0.0f;
+        std::size_t step_count = 0;
 
         for (std::size_t train_index = 0; train_index < train_data.size(); train_index++) {
             curr_batch_count++;
@@ -95,6 +101,8 @@ int main() {
             std::shared_ptr<Tensor> dot_log_probs = *log_probs * target;
             std::shared_ptr<Tensor> loss = dot_log_probs->neg();
 
+            epoch_loss += loss->item();
+
             loss->backward();
 
             if (curr_batch_count >= batch_size) {
@@ -102,6 +110,15 @@ int main() {
                     params[i]->sgd_step(learning_rate, curr_batch_count);
                     params[i]->zero_grad();
                 }
+
+                step_count++;
+                if (step_count % 50 == 0) {
+                    std::cout << "  step " << step_count
+                              << " / sample " << train_index + 1
+                              << " / avg loss so far: " << (epoch_loss / (train_index + 1))
+                              << std::endl;
+                }
+
                 curr_batch_count = 0;
             }
         }
@@ -111,8 +128,23 @@ int main() {
                 params[i]->sgd_step(learning_rate, curr_batch_count);
                 params[i]->zero_grad();
             }
+
+            step_count++;
+                if (step_count % 50 == 0) {
+                    std::cout << "  step " << step_count
+                              << " / sample " << train_data.size()
+                              << " / avg loss so far: " << (epoch_loss / (train_data.size()))
+                              << std::endl;
+            }
         }
+
+        std::cout << "Epoch " << (epoch + 1)
+            << " finished. avg loss: " << (epoch_loss / train_data.size())
+            << std::endl;
+
     }
+
+    std::cout << "Training complete." << std::endl;
 
 
     return 0;
