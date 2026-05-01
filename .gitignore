@@ -2,3 +2,6 @@ main
 .vscode/
 build/
 data/mnist/
+out/
+CMakePresets.json
+CMakeLists.txt
