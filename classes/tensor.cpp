@@ -773,40 +773,5 @@ public:
             _data[i] -= learning_rate * (_grad[i] / batch_size);
         }
     }
-
-    friend std::ostream &operator<<(std::ostream &os, Tensor &obj) {
-        if (obj._shape.empty()) {
-            os << obj._data[0];
-            return os;
-        }
-
-        if (obj._shape.size() == 1) {
-            os << "[";
-            for (std::size_t i = 0; i < obj._shape[0]; i++) {
-                os << obj._data[i];
-                if (i + 1 < obj._shape[0]) {
-                    os << ", ";
-                }
-            }
-            os << "]";
-            return os;
-        }
-
-        os << "[";
-        for (std::size_t i = 0; i < obj._shape[0]; i++) {
-            os << "[";
-            for (std::size_t j = 0; j < obj._shape[1]; j++) {
-                os << obj(i, j);
-                if (j + 1 < obj._shape[1]) {
-                    os << ", ";
-                }
-            }
-            os << "]";
-            if (i + 1 < obj._shape[0]) {
-                os << ", ";
-            }
-        }
-        os << "]";
-        return os;
-    }
+    
 };
