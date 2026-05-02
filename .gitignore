@@ -5,3 +5,4 @@ data/mnist/
 out/
 CMakePresets.json
 CMakeLists.txt
+results.txt
