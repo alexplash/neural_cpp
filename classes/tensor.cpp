@@ -411,25 +411,6 @@ public:
 
     std::shared_ptr<Tensor> relu() {
 
-        // scalar
-        if (_shape.size() == 0) {
-            float result = item() > 0 ? item() : 0;
-
-            if (_requires_grad) {
-                std::shared_ptr<Tensor> self = shared_from_this();
-                std::vector<std::shared_ptr<Tensor>> parents{self};
-                std::function<void(const std::vector<float> &)> gradfn =
-                    [self](const std::vector<float> &grad_output) {
-                        float grad_self = self->item() > 0 ? 1.0 : 0.0;
-                        self->add_to_grad({grad_output[0] * grad_self});
-                    };
-                
-                return std::make_shared<Tensor>(result, true, gradfn, parents);
-            }
-
-            return std::make_shared<Tensor>(result);
-        }
-
         // 1d
         std::vector<float> result;
 
@@ -460,27 +441,6 @@ public:
     }
 
     std::shared_ptr<Tensor> log() {
-        // scalar
-        if (_shape.size() == 0) {
-            if (item() <= 0.0f) {
-                throw std::runtime_error("log input must be positive");
-            }
-
-            float result = std::log(item());
-
-            if (_requires_grad) {
-                std::shared_ptr<Tensor> self = shared_from_this();
-                std::vector<std::shared_ptr<Tensor>> parents{self};
-                std::function<void(const std::vector<float>&)> gradfn =
-                    [self](const std::vector<float>& grad_output) {
-                        self->add_to_grad({grad_output[0] * (1.0f / self->item())});
-                    };
-                
-                return std::make_shared<Tensor>(result, true, gradfn, parents);
-            }
-
-            return std::make_shared<Tensor>(result);
-        }
 
         // 1d
         if (_shape.size() != 1) {
