@@ -646,7 +646,7 @@ public:
         _grad = std::vector<float>(_data.size(), 0);
     }
 
-    std::size_t numel() {
+    const std::size_t& numel() {
         return _data.size();
     }
 
