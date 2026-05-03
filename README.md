@@ -2,7 +2,7 @@
 
 ![neural_cpp preview](images/image.png)
 
-A small C++ neural-network project that trains a handwritten-digit classifier on MNIST. The project includes a minimal `Tensor` class with automatic differentiation, matrix/vector operations, activation functions, softmax, cross-entropy-style loss construction, and SGD parameter updates.
+A small C++ project that creates a minimal deep learning optimization engine from scratch. The project includes a minimal `Tensor` class with automatic differentiation, matrix/vector operations, activation functions, softmax, cross-entropy-style loss construction, and SGD parameter updates.
 
 ## Project Layout
 
