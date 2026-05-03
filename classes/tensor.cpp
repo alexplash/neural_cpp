@@ -309,7 +309,7 @@ public:
                     [self, other](const std::vector<float>& grad_output) {
                         std::vector<float> grad_self;
                         std::vector<float> grad_other;
-                        for (std::size_t i = 0; i < self->numel(); i++) {
+                        for (std::size_t i = 0; i < self->shape()[0]; i++) {
                             grad_self.push_back((*other)(i) * grad_output[0]);
                             grad_other.push_back((*self)(i) * grad_output[0]);
                         }
@@ -644,10 +644,6 @@ public:
 
     void zero_grad() {
         _grad = std::vector<float>(_data.size(), 0);
-    }
-
-    const std::size_t& numel() {
-        return _data.size();
     }
 
     void backward() {
