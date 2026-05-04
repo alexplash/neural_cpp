@@ -347,12 +347,12 @@ public:
                         }
 
                         std::vector<float> grad_other;
-                        for (std::size_t i = 0; i < other->shape()[0]; i++) {
-                            float grad_other_i = 0;
-                            for (std::size_t j = 0; j < self->shape()[0]; j++) {
-                                grad_other_i += ((*self)(j, i) * grad_output[j]);
+                        for (std::size_t j = 0; j < other->shape()[0]; j++) {
+                            float grad_other_j = 0;
+                            for (std::size_t i = 0; i < self->shape()[0]; i++) {
+                                grad_other_i += ((*self)(i, j) * grad_output[i]);
                             }
-                            grad_other.push_back(grad_other_i);
+                            grad_other.push_back(grad_other_j);
                         }
 
                         self->add_to_grad(grad_self);
@@ -507,16 +507,26 @@ public:
             std::shared_ptr<Tensor> self = shared_from_this();
             std::vector<std::shared_ptr<Tensor>> parents{self};
             std::function<void(const std::vector<float>&)> gradfn =
-                [self, result](const std::vector<float>& grad_output) {
+                [self, exp_values, sum_exp](const std::vector<float>& grad_output) {
                     std::vector<float> grad_self;
 
-                    float dot = 0;
-                    for (std::size_t j = 0; j < result.size(); j++) {
-                        dot += grad_output[j] * result[j];
-                    }
+                    float sum_exp_squared = std::pow(sum_exp, 2);
 
-                    for (std::size_t i = 0; i < result.size(); i++) {
-                        grad_self.push_back(result[i] * (grad_output[i] - dot));
+                    for (std::size_t i = 0; i < exp_values.size(); i++) {
+                        float curr_grad_i = 0;
+                        for (std::size_t k = 0; k < exp_values.size(); k++) {
+                            float curr_grad_k = 0;
+
+                            if (i == k) {
+                                // quotient rule
+                                curr_grad_k = ((exp_values[i] * sum_exp) - (std::pow(exp_values[i], 2))) / sum_exp_squared;
+                            } else {
+                                // also quotient rule, but first term of the numerator in quotient rule becomes zero
+                                curr_grad_k = (-1 * (exp_values[k] * exp_values[i])) / sum_exp_squared; 
+                            }
+                            curr_grad_i += grad_output[k] * curr_grad_k;
+                        }
+                        grad_self.push_back(curr_grad_i);
                     }
 
                     self->add_to_grad(grad_self);
