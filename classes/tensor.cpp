@@ -350,7 +350,7 @@ public:
                         for (std::size_t j = 0; j < other->shape()[0]; j++) {
                             float grad_other_j = 0;
                             for (std::size_t i = 0; i < self->shape()[0]; i++) {
-                                grad_other_i += ((*self)(i, j) * grad_output[i]);
+                                grad_other_j += ((*self)(i, j) * grad_output[i]);
                             }
                             grad_other.push_back(grad_other_j);
                         }
