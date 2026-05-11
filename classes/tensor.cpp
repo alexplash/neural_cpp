@@ -39,7 +39,7 @@ public:
         _shape{},
         _grad{},
         _gradfn{grad_fn},
-        _parents{parents},
+        _parents(parents),
         _requires_grad{requires_grad}
     {
         if (_requires_grad) {
@@ -56,7 +56,7 @@ public:
         _shape{data.size()},
         _grad{},
         _gradfn{grad_fn},
-        _parents{parents},
+        _parents(parents),
         _requires_grad{requires_grad}
     {
         if (_requires_grad) {
@@ -73,7 +73,7 @@ public:
         _shape{},
         _grad{},
         _gradfn{grad_fn},
-        _parents{parents},
+        _parents(parents),
         _requires_grad{requires_grad}
     {
         if (data.empty() || data[0].empty()) {
